@@ -1,0 +1,79 @@
+syntax = "proto3";
+
+package vocab;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto"; // For optional fields
+
+service VocabService {
+  rpc ReviewCard (ReviewRequest) returns (ReviewResponse) {}
+  rpc AnalyzeText (AnalyzeTextRequest) returns (AnalyzeTextResponse) {}
+  rpc AnalyzeTargetWord (AnalyzeTargetWordRequest) returns (AnalyzeTargetWordResponse) {}
+}
+
+message ReviewRequest {
+  Card card = 1;
+  int32 quality = 2;
+  google.protobuf.Int32Value review_duration = 3; // Optional: Send duration from client
+  // Project FSRS settings: when set, inclusive creates Scheduler with them (py-fsrs).
+  google.protobuf.DoubleValue request_retention = 4;
+  google.protobuf.Int32Value maximum_interval = 5;
+  repeated double w = 6;  // FSRS weights (17 or 21). Empty = py-fsrs defaults.
+  optional google.protobuf.Timestamp review_at = 7; // UTC instant of review (Anki-style; optional)
+  repeated int32 learning_steps_seconds = 8;
+  repeated int32 relearning_steps_seconds = 9;
+  optional bool enable_fuzzing = 10;
+}
+
+message ReviewResponse {
+  Card card = 1;
+  ReviewLog review_log = 2;
+}
+
+// Wire contract with VocabularyService: state=0 means NEW; inclusive maps 0 -> py-fsrs Learning on first review.
+// step is required for learning/relearning ladder progression. review_at on ReviewRequest is always UTC from backend.
+message Card {
+  int32 state = 1;
+  google.protobuf.Int32Value step = 2; // Optional to handle None
+  google.protobuf.FloatValue stability = 3; // Optional to handle None
+  google.protobuf.FloatValue difficulty = 4; // Optional to handle None
+  google.protobuf.Timestamp due = 5;      
+  google.protobuf.Timestamp last_review = 6; 
+}
+
+message ReviewLog {
+  int32 rating = 2;        
+  google.protobuf.Timestamp review_datetime = 3; 
+  google.protobuf.Int32Value review_duration = 4; // Optional to handle None
+}
+
+message AnalyzeTextRequest {
+  string text = 1;
+}
+
+message AnalyzeTextResponse {
+  repeated NlpToken tokens = 1;
+}
+
+message AnalyzeTargetWordRequest {
+  string sentence = 1;
+  string target_word = 2;
+}
+
+message AnalyzeTargetWordResponse {
+  string lemma = 1;
+  google.protobuf.StringValue pos_tag = 2;
+}
+
+message NlpToken {
+  string text = 1;
+  google.protobuf.StringValue lemma = 2;
+  TokenType type = 3;
+  google.protobuf.StringValue pos_tag = 4;
+}
+
+enum TokenType {
+  WORD = 0;
+  SPACE = 1;
+  PUNCTUATION = 2;
+}

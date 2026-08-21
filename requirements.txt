@@ -1,0 +1,7 @@
+# Совместимо с py-fsrs / Dockerfile inclusive
+grpcio>=1.60.0
+grpcio-tools>=1.60.0
+protobuf>=4.25.0
+fsrs>=4.0.0
+nltk>=3.9.1
+pytest>=8.0.0
